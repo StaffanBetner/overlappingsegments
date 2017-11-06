@@ -1,4 +1,5 @@
 library(shiny)
+options(shiny.maxRequestSize=30*1024^2) 
 library(tidyverse)
 library(data.table)
 library(kableExtra)
