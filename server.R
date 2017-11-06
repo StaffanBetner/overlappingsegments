@@ -17,8 +17,7 @@ findoverlapping_segments <- function(dataset, cM = 7, name = NA, exclude=NA){
       CHROMOSOME = CHROMOSOME %>%  factor(
         labels = c(1:22, "X") %>% as.character(),
         levels = (c(1:22, "X")) %>% as.character(),
-        ordered =
-          T
+        ordered = T
       )
     ) %>% 
     arrange(CHROMOSOME) %>% unique}else{
