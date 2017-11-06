@@ -3,6 +3,8 @@ options(shiny.maxRequestSize=30*1024^2)
 library(tidyverse)
 library(data.table)
 library(kableExtra)
+#library(xlsx)
+
 findoverlapping_segments <- function(dataset, cM = 7, name = NA, exclude=NA){
   library(data.table)
   library(tidyverse)
@@ -73,12 +75,23 @@ updateSelectizeInput(
  observe({output$table <- renderDataTable({ if (is.null(inFile())) {
    return(NULL)
  } else {segments()}})
- output$downloadData <- downloadHandler(
+ output$downloadData_csv <- downloadHandler(
    filename = "overlapping segments.csv",
    content = function(file) {
-     write.csv(segments(), file, row.names = FALSE, eol = "\r\n")
+     write.csv(segments(), 
+               file, 
+               row.names = 
+                 FALSE, eol = "\r\n")
    }
  )
- 
+ output$downloadData_xlsx <- downloadHandler(
+   filename="overlapping segments.xlsx", 
+   content = function(file){
+     xlsx::write.xlsx(segments(), 
+                file, 
+                sheetName = "Overlapping segments", 
+                row.names = FALSE)
+     }
+   )
  })
 })

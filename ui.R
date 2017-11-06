@@ -13,7 +13,8 @@ shinyUI(fluidPage(
     numericInput("cM", "Minimum cM", value=7),
     selectizeInput("name", "Select matches for comparison",choices = NA, multiple=T),
     selectizeInput("exclude", "Select matches to exclude from comparison",choices = NA, multiple=T),
-    downloadButton("downloadData", "Download output")
+    downloadButton("downloadData_csv", "Download output (.csv)"),
+    downloadButton("downloadData_xlsx", "Download output (.xlsx)")
   ),
   mainPanel(
     dataTableOutput("table")
