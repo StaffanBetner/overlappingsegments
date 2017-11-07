@@ -1,9 +1,9 @@
 library(shiny)
-options(shiny.maxRequestSize=30*1024^2) 
 library(tidyverse)
 library(data.table)
 library(kableExtra)
 #library(xlsx)
+options(shiny.maxRequestSize=30*1024^2)
 
 findoverlapping_segments <- function(dataset, cM = 7, name = NA, exclude=NA){
   library(data.table)
