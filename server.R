@@ -49,48 +49,58 @@ shinyServer(function(input, output, session) {
                                 CHROMOSOME = col_character(), `END LOCATION` = col_integer(), 
                                 `MATCHING SNPS` = col_integer(), 
                                 MATCHNAME = col_character(), NAME = col_character(), 
-                                `START LOCATION` = col_integer()))
+                                `START LOCATION` = col_integer()), trim_ws = T)
     }
   })
+  
+  matchesData <- reactive({
+    if (is.null(input$file2)) {
+      return(NULL)
+    } else {read_csv(input$file2$datapath, 
+                     col_types = cols(`Match Date` = col_date(format = "%m/%d/%Y")), na = c("N/A","")) %>% mutate(MATCHNAME=paste(`First Name`, `Middle Name`, `Last Name`) %>% gsub(" NA "," ", x = .)) %>% 
+        select(-`Full Name`,-`First Name`, -`Middle Name`,-`Last Name`, -`Ancestral Surnames`, -`Y-DNA Haplogroup`, -`mtDNA Haplogroup`,-Notes, -`Shared cM`, -`Longest Block`, -`Suggested Relationship`)}})
   
   observe({
     updateSelectizeInput(
       session,
       "name",
       choices=myData()$MATCHNAME)
-updateSelectizeInput(
-    session,
-    "exclude",
-    choices=myData()$MATCHNAME)
-})
+    updateSelectizeInput(
+      session,
+      "exclude",
+      choices=myData()$MATCHNAME)
+  })
   segments <- reactive({
     if (is.null(inFile())) {
       return(NULL)
-    } else {
-      myData() %>% 
-        findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector())
+    } else {if(is.null(matchesData())){myData() %>% 
+        findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
+        transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`)}else{
+          myData() %>% 
+            findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
+            transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`) %>% left_join(matchesData())}
     }
   })
- observe({output$table <- renderDataTable({ if (is.null(inFile())) {
-   return(NULL)
- } else {segments()}})
- output$downloadData_csv <- downloadHandler(
-   filename = "overlapping segments.csv",
-   content = function(file) {
-     write.csv(segments(), 
-               file, 
-               row.names = 
-                 FALSE, eol = "\r\n")
-   }
- )
- output$downloadData_xlsx <- downloadHandler(
-   filename="overlapping segments.xlsx", 
-   content = function(file){
-     xlsx::write.xlsx(segments(), 
+  observe({output$table <- renderDataTable({ if (is.null(inFile())) {
+    return(NULL)
+  } else {segments()}})
+  output$downloadData_csv <- downloadHandler(
+    filename = "overlapping segments.csv",
+    content = function(file) {
+      write.csv(segments(), 
                 file, 
-                sheetName = "Overlapping segments", 
-                row.names = FALSE)
-     }
-   )
- })
+                row.names = 
+                  FALSE, eol = "\r\n")
+    }
+  )
+  output$downloadData_xlsx <- downloadHandler(
+    filename="overlapping segments.xlsx", 
+    content = function(file){
+      xlsx::write.xlsx(segments(), 
+                       file, 
+                       sheetName = "Overlapping segments", 
+                       row.names = FALSE)
+    }
+  )
+  })
 })
