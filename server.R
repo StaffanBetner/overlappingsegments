@@ -49,7 +49,11 @@ shinyServer(function(input, output, session) {
                                 CHROMOSOME = col_character(), `END LOCATION` = col_integer(), 
                                 `MATCHING SNPS` = col_integer(), 
                                 MATCHNAME = col_character(), NAME = col_character(), 
-                                `START LOCATION` = col_integer()), trim_ws = T)
+                                `START LOCATION` = col_integer()), trim_ws = T)%>% 
+        mutate(MATCHNAME = MATCHNAME %>%
+                 gsub("  ", " ", x = .) %>% gsub("  ", " ", x = .) %>% gsub("  ", " ", x = .)) %>%
+        group_by(NAME, MATCHNAME) %>% 
+        mutate(`Shared cM`= sum(CENTIMORGANS[CHROMOSOME!="X"]) %>% signif(digits = 2), `Longest Block` = max(CENTIMORGANS[CHROMOSOME!="X"]) %>% signif(digits = 2))
     }
   })
   
@@ -57,8 +61,15 @@ shinyServer(function(input, output, session) {
     if (is.null(input$file2)) {
       return(NULL)
     } else {read_csv(input$file2$datapath, 
-                     col_types = cols(`Match Date` = col_date(format = "%m/%d/%Y")), na = c("N/A","")) %>% mutate(MATCHNAME=paste(`First Name`, `Middle Name`, `Last Name`) %>% gsub(" NA "," ", x = .)) %>% 
-        select(-`Full Name`,-`First Name`, -`Middle Name`,-`Last Name`, -`Ancestral Surnames`, -`Y-DNA Haplogroup`, -`mtDNA Haplogroup`,-Notes, -`Shared cM`, -`Longest Block`, -`Suggested Relationship`)}})
+                     col_types = cols(`Match Date` = col_date(format = "%m/%d/%Y")), na = c("N/A","")) %>% 
+        mutate(MATCHNAME=`Full Name` %>% 
+                 gsub("  "," ", x = .) %>% gsub("  "," ", x = .) %>% gsub("  "," ", x = .)) %>% 
+        select(-`Full Name`,
+               -`First Name`,
+               -`Middle Name`,
+               -`Last Name`) %>% 
+        mutate(`Shared cM`=`Shared cM` %>% signif(digits=2),
+               `Longest Block`=`Longest Block` %>% signif(digits=2))}})
   
   observe({
     updateSelectizeInput(
@@ -78,7 +89,8 @@ shinyServer(function(input, output, session) {
         transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`)}else{
           myData() %>% 
             findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
-            transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`) %>% left_join(matchesData())}
+            transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`) %>% left_join(matchesData()) %>% 
+            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)}
     }
   })
   observe({output$table <- renderDataTable({ if (is.null(inFile())) {
