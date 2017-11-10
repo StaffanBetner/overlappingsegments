@@ -15,7 +15,9 @@ shinyUI(fluidPage(
       selectizeInput("name", "Select matches for comparison",choices = NA, multiple=T),
       selectizeInput("exclude", "Select matches to exclude from comparison",choices = NA, multiple=T),
       downloadButton("downloadData_csv", "Download output (.csv)"),
-      downloadButton("downloadData_xlsx", "Download output (.xlsx)")
+      downloadButton("downloadData_xlsx", "Download output (.xlsx)"),
+      br(),
+      helpText("Contact: staffan@betner.nu")
     ),
     mainPanel(
       dataTableOutput("table")

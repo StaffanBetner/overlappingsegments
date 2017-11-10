@@ -93,13 +93,24 @@ shinyServer(function(input, output, session) {
             select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)}
     }
   })
+  
+  segments_out <- reactive({
+    if (is.null(inFile())) {
+      return(NULL)
+    } else {if(is.null(matchesData())){myData() %>% 
+        findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector())}else{
+          myData() %>% 
+            findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% left_join(matchesData()) %>% 
+            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)}
+    }
+  })
   observe({output$table <- renderDataTable({ if (is.null(inFile())) {
     return(NULL)
   } else {segments()}})
   output$downloadData_csv <- downloadHandler(
     filename = "overlapping segments.csv",
     content = function(file) {
-      write.csv(segments(), 
+      write.csv(segments_out(), 
                 file, 
                 row.names = 
                   FALSE, eol = "\r\n")
@@ -108,7 +119,7 @@ shinyServer(function(input, output, session) {
   output$downloadData_xlsx <- downloadHandler(
     filename="overlapping segments.xlsx", 
     content = function(file){
-      xlsx::write.xlsx(segments(), 
+      xlsx::write.xlsx(segments_out(), 
                        file, 
                        sheetName = "Overlapping segments", 
                        row.names = FALSE)
