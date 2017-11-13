@@ -44,12 +44,12 @@ shinyServer(function(input, output, session) {
     if (is.null(inFile())) {
       return(NULL)
     } else {
-      read_csv(inFile()$datapath, 
+      rbindlist(lapply(inFile()$datapath, read_csv,
                col_types = cols(CENTIMORGANS = col_double(), 
                                 CHROMOSOME = col_character(), `END LOCATION` = col_integer(), 
                                 `MATCHING SNPS` = col_integer(), 
                                 MATCHNAME = col_character(), NAME = col_character(), 
-                                `START LOCATION` = col_integer()), trim_ws = T)%>% 
+                                `START LOCATION` = col_integer()), trim_ws = T)) %>% 
         mutate(MATCHNAME = MATCHNAME %>%
                  gsub("  ", " ", x = .) %>% gsub("  ", " ", x = .) %>% gsub("  ", " ", x = .)) %>%
         group_by(NAME, MATCHNAME) %>% 
@@ -60,8 +60,9 @@ shinyServer(function(input, output, session) {
   matchesData <- reactive({
     if (is.null(input$file2)) {
       return(NULL)
-    } else {read_csv(input$file2$datapath, 
-                     col_types = cols(`Match Date` = col_date(format = "%m/%d/%Y")), na = c("N/A","")) %>% 
+    } else {rbindlist(lapply(inFile()$datapath, read_csv,
+                     col_types = cols(`Match Date` = col_date(format = "%m/%d/%Y")), na = c("N/A",""))) %>% 
+        group_by(`Full Name`) %>% dplyr::filter(`Match Date` == min(`Match Date`)) %>% ungroup %>% 
         mutate(MATCHNAME=`Full Name` %>% 
                  gsub("  "," ", x = .) %>% gsub("  "," ", x = .) %>% gsub("  "," ", x = .)) %>% 
         select(-`Full Name`,
@@ -71,11 +72,20 @@ shinyServer(function(input, output, session) {
         mutate(`Shared cM`=`Shared cM` %>% signif(digits=2),
                `Longest Block`=`Longest Block` %>% signif(digits=2))}})
   
+  names <- reactive({
+    uniques <- data.frame(names=unique(segments()$NAME))
+    if(1<nrow(uniques))
+        {uniques$nam}
+        else
+        {NULL}
+      }
+    )
+  
   observe({
     updateSelectizeInput(
       session,
       "name",
-      choices=myData()$MATCHNAME)
+      choices=myData()$MATCHNAME, selected = names())
     updateSelectizeInput(
       session,
       "exclude",
