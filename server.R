@@ -103,7 +103,7 @@ shinyServer(function(input, output, session) {
         select(-`Full Name`,
                -`First Name`,
                -`Middle Name`,
-               -`Last Name`) %>% 
+               -`Last Name`,-`Linked Relationship`,-`Matching Bucket`-Notes) %>% 
         mutate(`Shared cM`=`Shared cM` %>% signif(digits=2),
                `Longest Block`=`Longest Block` %>% signif(digits=2))}})
   
@@ -127,8 +127,8 @@ shinyServer(function(input, output, session) {
       out}
       else{
         out <- findoverlapping_segments(dataset = myData(),cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
-            transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`) %>% left_join(matchesData()) %>% 
-            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)
+            transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`, `Shared cM`, `Longest Block`) %>% left_join(matchesData()) %>% 
+            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`, -`Shared cM`, -`Longest Block`)
         out <-overlap_in_lists(out)
         out}
     }
