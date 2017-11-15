@@ -97,7 +97,7 @@ shinyServer(function(input, output, session) {
                                               `Shared cM` = col_double(), `Suggested Relationship` = col_character(), 
                                               `Y-DNA Haplogroup` = col_character(), 
                                               `mtDNA Haplogroup` = col_character()), na = c("N/A",""))) %>% 
-        group_by(`Full Name`) %>% dplyr::filter(`Match Date` == min(`Match Date`)) %>% ungroup %>% 
+      #  group_by(`Full Name`) %>% dplyr::filter(`Match Date` == min(`Match Date`)) %>% ungroup %>%  #Unnecessary
         mutate(MATCHNAME=`Full Name` %>% 
                  gsub("  "," ", x = .) %>% gsub("  "," ", x = .) %>% gsub("  "," ", x = .)) %>% 
         select(-`Full Name`,
