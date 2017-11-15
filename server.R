@@ -2,6 +2,7 @@ library(shiny)
 library(tidyverse)
 library(data.table)
 library(kableExtra)
+library(reshape2)
 #library(xlsx)
 options(shiny.maxRequestSize=30*1024^2)
 
@@ -40,11 +41,20 @@ shinyServer(function(input, output, session) {
     }
   })
   
+  
+  inFile2 <- reactive({
+    if (is.null(input$file2)) {
+      return(NULL)
+    } else {
+      input$file2
+    }
+  })
+  
   myData <- reactive({
     if (is.null(inFile())) {
       return(NULL)
     } else {
-      rbindlist(lapply(inFile()$datapath, read_csv,
+     out <- rbindlist(lapply(inFile()$datapath, read_csv,
                col_types = cols(CENTIMORGANS = col_double(), 
                                 CHROMOSOME = col_character(), `END LOCATION` = col_integer(), 
                                 `MATCHING SNPS` = col_integer(), 
@@ -53,15 +63,40 @@ shinyServer(function(input, output, session) {
         mutate(MATCHNAME = MATCHNAME %>%
                  gsub("  ", " ", x = .) %>% gsub("  ", " ", x = .) %>% gsub("  ", " ", x = .)) %>%
         group_by(NAME, MATCHNAME) %>% 
-        mutate(`Shared cM`= sum(CENTIMORGANS[CHROMOSOME!="X"]) %>% signif(digits = 2), `Longest Block` = max(CENTIMORGANS[CHROMOSOME!="X"]) %>% signif(digits = 2))
+        mutate(`Shared cM`= sum(CENTIMORGANS[CHROMOSOME!="X"]) %>% signif(digits = 2), 
+               `Longest Block` = max(CENTIMORGANS[CHROMOSOME!="X"]) %>% signif(digits = 2))
+     if(length(unique(out$NAME))>1){
+       uniques_matches <- split(out$MATCHNAME, out$NAME) %>% 
+       lapply(., unique) %>% 
+       melt %>% table() %>% 
+       as.data.frame %>% 
+       group_by(value) %>% 
+       summarise(n=sum(Freq)) %>% 
+       dplyr::filter(n>1) %>%
+       mutate(value = value %>% parse_character()) %>% 
+       .$value
+       uniques_matches <- rbind(uniques_matches, unique(out$NAME))
+       out <- out %>% dplyr::filter(MATCHNAME %in% uniques_matches)
+       out}
+     else{out}
     }
   })
   
   matchesData <- reactive({
     if (is.null(input$file2)) {
       return(NULL)
-    } else {rbindlist(lapply(inFile()$datapath, read_csv,
-                     col_types = cols(`Match Date` = col_date(format = "%m/%d/%Y")), na = c("N/A",""))) %>% 
+    } else {rbindlist(lapply(inFile2()$datapath, read_csv,
+                             col_types = cols(`Ancestral Surnames` = col_character(), 
+                                              Email = col_character(), `First Name` = col_character(), 
+                                              `Full Name` = col_character(), `Last Name` = col_character(), 
+                                              `Linked Relationship` = col_character(), 
+                                              `Longest Block` = col_double(), `Match Date` = col_date(format = "%m/%d/%Y"), 
+                                              `Matching Bucket` = col_character(), 
+                                              `Middle Name` = col_character(), 
+                                              Notes = col_character(), `Relationship Range` = col_character(), 
+                                              `Shared cM` = col_double(), `Suggested Relationship` = col_character(), 
+                                              `Y-DNA Haplogroup` = col_character(), 
+                                              `mtDNA Haplogroup` = col_character()), na = c("N/A",""))) %>% 
         group_by(`Full Name`) %>% dplyr::filter(`Match Date` == min(`Match Date`)) %>% ungroup %>% 
         mutate(MATCHNAME=`Full Name` %>% 
                  gsub("  "," ", x = .) %>% gsub("  "," ", x = .) %>% gsub("  "," ", x = .)) %>% 
@@ -73,30 +108,22 @@ shinyServer(function(input, output, session) {
                `Longest Block`=`Longest Block` %>% signif(digits=2))}})
   
   names <- reactive({
-    uniques <- data.frame(names=unique(segments()$NAME))
+    uniques <- data.frame(names=unique(myData()$NAME))
     if(1<nrow(uniques))
-        {uniques$nam}
+        {uniques$names}
         else
         {NULL}
       }
     )
   
-  observe({
-    updateSelectizeInput(
-      session,
-      "name",
-      choices=myData()$MATCHNAME, selected = names())
-    updateSelectizeInput(
-      session,
-      "exclude",
-      choices=myData()$MATCHNAME)
-  })
+
   segments <- reactive({
     if (is.null(inFile())) {
       return(NULL)
     } else {if(is.null(matchesData())){myData() %>% 
         findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
-        transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`)}else{
+        transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`)}
+      else{
           myData() %>% 
             findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
             transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`) %>% left_join(matchesData()) %>% 
@@ -108,15 +135,29 @@ shinyServer(function(input, output, session) {
     if (is.null(inFile())) {
       return(NULL)
     } else {if(is.null(matchesData())){myData() %>% 
-        findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector())}else{
+        findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
+        transmute(NAME,MATCHNAME,CHROMOSOME,`START LOCATION`,`END LOCATION`,CENTIMORGANS,`MATCHING SNPS`)}else{
           myData() %>% 
             findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% left_join(matchesData()) %>% 
-            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)}
+            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)
+          }
     }
   })
-  observe({output$table <- renderDataTable({ if (is.null(inFile())) {
+  observe({updateSelectizeInput(
+    session,
+    "name",
+    choices=myData()$MATCHNAME, selected = names())})
+  
+  observe({updateSelectizeInput(
+    session,
+    "exclude",
+    choices=myData()$MATCHNAME)})
+  
+  observe({
+    output$table <- renderDataTable({ if (is.null(inFile())) {
     return(NULL)
   } else {segments()}})
+    
   output$downloadData_csv <- downloadHandler(
     filename = "overlapping segments.csv",
     content = function(file) {
