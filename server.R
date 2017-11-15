@@ -4,7 +4,7 @@ library(data.table)
 library(kableExtra)
 library(reshape2)
 #library(xlsx)
-options(shiny.maxRequestSize=30*1024^2)
+options(shiny.maxRequestSize=50*1024^2)
 
 findoverlapping_segments <- function(dataset, cM = 7, name = NA, exclude=NA){
   library(data.table)
@@ -29,7 +29,20 @@ findoverlapping_segments <- function(dataset, cM = 7, name = NA, exclude=NA){
                                                    dataset[olaps$yid,2])[,1])$MATCHNAME %in% name),]$xid,],  #get the rows for those in name
                 dataset[olaps[(as.data.frame(cbind(dataset[olaps$xid,2], 
                                                    dataset[olaps$yid,2])[,1])$MATCHNAME %in% name),]$yid,]) %>% unique}} #get the rows for those with overlap with name
-
+overlap_in_lists <- function(out){if(length(unique(out$NAME))>1){
+  uniques_matches <- split(out$MATCHNAME, out$NAME) %>% 
+    lapply(., unique) %>% 
+    melt %>% table() %>% 
+    as.data.frame %>% 
+    group_by(value) %>% 
+    summarise(n=sum(Freq)) %>% 
+    dplyr::filter(n>1) %>%
+    mutate(value = value %>% parse_character()) %>% 
+    .$value
+  uniques_matches <- cbind(uniques_matches, unique(out$NAME)) %>% as.vector %>% unique
+  out <- out %>% dplyr::filter(MATCHNAME %in% uniques_matches)
+  out}
+  else{out}}
 
 shinyServer(function(input, output, session) {
   
@@ -65,21 +78,8 @@ shinyServer(function(input, output, session) {
         group_by(NAME, MATCHNAME) %>% 
         mutate(`Shared cM`= sum(CENTIMORGANS[CHROMOSOME!="X"]) %>% signif(digits = 2), 
                `Longest Block` = max(CENTIMORGANS[CHROMOSOME!="X"]) %>% signif(digits = 2))
-     if(length(unique(out$NAME))>1){
-       uniques_matches <- split(out$MATCHNAME, out$NAME) %>% 
-       lapply(., unique) %>% 
-       melt %>% table() %>% 
-       as.data.frame %>% 
-       group_by(value) %>% 
-       summarise(n=sum(Freq)) %>% 
-       dplyr::filter(n>1) %>%
-       mutate(value = value %>% parse_character()) %>% 
-       .$value
-       uniques_matches <- rbind(uniques_matches, unique(out$NAME))
-       out <- out %>% dplyr::filter(MATCHNAME %in% uniques_matches)
-       out}
-     else{out}
-    }
+     out <-overlap_in_lists(out)
+     out}
   })
   
   matchesData <- reactive({
@@ -120,27 +120,31 @@ shinyServer(function(input, output, session) {
   segments <- reactive({
     if (is.null(inFile())) {
       return(NULL)
-    } else {if(is.null(matchesData())){myData() %>% 
-        findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
-        transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`)}
+    } else {if(is.null(matchesData())){
+      out <- findoverlapping_segments(dataset = myData(),cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
+        transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`)
+      out <-overlap_in_lists(out)
+      out}
       else{
-          myData() %>% 
-            findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
+        out <- findoverlapping_segments(dataset = myData(),cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
             transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`) %>% left_join(matchesData()) %>% 
-            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)}
+            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)
+        out <-overlap_in_lists(out)
+        out}
     }
   })
   
   segments_out <- reactive({
     if (is.null(inFile())) {
       return(NULL)
-    } else {if(is.null(matchesData())){myData() %>% 
-        findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
+    } else {if(is.null(matchesData())){
+      out <- findoverlapping_segments(dataset = myData(),cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
         transmute(NAME,MATCHNAME,CHROMOSOME,`START LOCATION`,`END LOCATION`,CENTIMORGANS,`MATCHING SNPS`)}else{
-          myData() %>% 
+         out<- myData() %>% 
             findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% left_join(matchesData()) %>% 
             select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)
-          }
+         out <-overlap_in_lists(out)
+         out}
     }
   })
   observe({updateSelectizeInput(
