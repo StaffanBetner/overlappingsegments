@@ -91,19 +91,17 @@ shinyServer(function(input, output, session) {
                                               `Full Name` = col_character(), `Last Name` = col_character(), 
                                               `Linked Relationship` = col_character(), 
                                               `Longest Block` = col_double(), `Match Date` = col_date(format = "%m/%d/%Y"), 
-                                              `Matching Bucket` = col_character(), 
+                                             # `Matching Bucket` = col_character(), 
                                               `Middle Name` = col_character(), 
-                                              Notes = col_character(), `Relationship Range` = col_character(), 
+                                            #  Notes = col_character(), 
+                                             `Relationship Range` = col_character(), 
                                               `Shared cM` = col_double(), `Suggested Relationship` = col_character(), 
                                               `Y-DNA Haplogroup` = col_character(), 
                                               `mtDNA Haplogroup` = col_character()), na = c("N/A",""))) %>% 
       #  group_by(`Full Name`) %>% dplyr::filter(`Match Date` == min(`Match Date`)) %>% ungroup %>%  #Unnecessary
         mutate(MATCHNAME=`Full Name` %>% 
                  gsub("  "," ", x = .) %>% gsub("  "," ", x = .) %>% gsub("  "," ", x = .)) %>% 
-        select(-`Full Name`,
-               -`First Name`,
-               -`Middle Name`,
-               -`Last Name`,-`Linked Relationship`,-`Matching Bucket`-Notes) %>% 
+        select(MATCHNAME, `Match Date`,`Relationship Range`,`Suggested Relationship`,`Shared cM`,`Longest Block`,`Email`,`Ancestral Surnames`,`Y-DNA Haplogroup`,`mtDNA Haplogroup`) %>% 
         mutate(`Shared cM`=`Shared cM` %>% signif(digits=2),
                `Longest Block`=`Longest Block` %>% signif(digits=2))}})
   
@@ -128,7 +126,7 @@ shinyServer(function(input, output, session) {
       else{
         out <- findoverlapping_segments(dataset = myData(),cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% 
             transmute(NAME,MATCHNAME,CHR=CHROMOSOME, START = `START LOCATION`, END = `END LOCATION`, CENTIMORGANS, `MATCHING SNPS`, `Shared cM`, `Longest Block`) %>% left_join(matchesData()) %>% 
-            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`, -`Shared cM`, -`Longest Block`)
+            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`, -`Shared cM`, -`Longest Block`)
         out <-overlap_in_lists(out)
         out}
     }
@@ -142,7 +140,7 @@ shinyServer(function(input, output, session) {
         transmute(NAME,MATCHNAME,CHROMOSOME,`START LOCATION`,`END LOCATION`,CENTIMORGANS,`MATCHING SNPS`)}else{
          out<- myData() %>% 
             findoverlapping_segments(cM=input$cM, name = input$name %>% as.vector(), exclude = input$exclude %>% as.vector()) %>% left_join(matchesData()) %>% 
-            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-Notes,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)
+            select(-`Ancestral Surnames`,-`Y-DNA Haplogroup`,-`mtDNA Haplogroup`,-`Shared cM`,-`Longest Block`,-`Suggested Relationship`)
          out <-overlap_in_lists(out)
          out}
     }
