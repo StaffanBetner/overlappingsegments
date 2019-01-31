@@ -68,11 +68,20 @@ shinyServer(function(input, output, session) {
       return(NULL)
     } else {
      out <- rbindlist(lapply(inFile()$datapath, read_csv,
-               col_types = cols(CENTIMORGANS = col_double(), 
-                                CHROMOSOME = col_character(), `END LOCATION` = col_integer(), 
-                                `MATCHING SNPS` = col_integer(), 
-                                MATCHNAME = col_character(), NAME = col_character(), 
-                                `START LOCATION` = col_integer()), trim_ws = T)) %>% 
+               col_types = cols(Centimorgans = col_double(), 
+                                Chromosome = col_character(), 
+                                `End Location` = col_integer(), 
+                                `Matching SNPs` = col_integer(), 
+                                `Match Name` = col_character(), 
+                                Name = col_character(), 
+                                `Start Location` = col_integer()), trim_ws = T)) %>% 
+       rename(NAME = Name,
+              MATCHNAME = `Match Name`,
+              CHROMOSOME = Chromosome,
+              `START LOCATION` = `Start Location`,
+              `END LOCATION` = `End Location`,
+              CENTIMORGANS = Centimorgans,
+              `MATCHING SNPS` = `Matching SNPs`) %>% 
         mutate(MATCHNAME = MATCHNAME %>%
                  gsub("  ", " ", x = .) %>% gsub("  ", " ", x = .) %>% gsub("  ", " ", x = .)) %>%
         group_by(NAME, MATCHNAME) %>% 
