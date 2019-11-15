@@ -17,7 +17,7 @@ shinyUI(
       downloadButton("downloadData_xlsx", "Download output (.xlsx)")
     ),
     mainPanel(
-      dataTableOutput("table")
+      DT::dataTableOutput("table")
     )),
     tabPanel("About",
              mainPanel(helpText("Chromium based (e.g. Chrome or Opera) browsers are recommended, Microsoft Edge won't work.", br(), 

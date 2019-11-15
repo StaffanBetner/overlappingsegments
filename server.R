@@ -6,7 +6,7 @@ library(reshape2)
 #library(xlsx)
 options(shiny.maxRequestSize=50*1024^2)
 
-findoverlapping_segments <- function(dataset, cM = 7, name = NA, exclude=NA){
+findoverlapping_segments <- function(dataset, cM = 7, name = NULL, exclude=NULL){
   library(data.table)
   library(tidyverse)
   '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -67,14 +67,16 @@ shinyServer(function(input, output, session) {
     if (is.null(inFile())) {
       return(NULL)
     } else {
-     out <- rbindlist(lapply(inFile()$datapath, read_csv,
-               col_types = cols(Centimorgans = col_double(), 
-                                Chromosome = col_character(), 
-                                `End Location` = col_integer(), 
-                                `Matching SNPs` = col_integer(), 
-                                `Match Name` = col_character(), 
-                                Name = col_character(), 
-                                `Start Location` = col_integer()), trim_ws = T)) %>% 
+     out <- rbindlist(lapply(inFile()$datapath, read.csv,
+                             check.names = F,
+                              col.names = c("Name",
+                                            "Match Name", 
+                                            "Chromosome","Start Location","End Location",
+                                            "Centimorgans",
+                                            "Matching SNPs"), 
+                              stringsAsFactors = F, encoding = "UTF-8")) %>% 
+       as_tibble %>% 
+       mutate_if(is.character, trimws) %>% 
        rename(NAME = Name,
               MATCHNAME = `Match Name`,
               CHROMOSOME = Chromosome,
@@ -154,6 +156,7 @@ shinyServer(function(input, output, session) {
          out}
     }
   })
+  
   observe({updateSelectizeInput(
     session,
     "name",
@@ -165,7 +168,7 @@ shinyServer(function(input, output, session) {
     choices=myData()$MATCHNAME)})
   
   observe({
-    output$table <- renderDataTable({ if (is.null(inFile())) {
+    output$table <- DT::renderDataTable({ if (is.null(inFile())) {
     return(NULL)
   } else {segments()}})
     
