@@ -37,7 +37,7 @@ overlap_in_lists <- function(out){if(length(unique(out$NAME))>1){
     group_by(value) %>% 
     summarise(n=sum(Freq)) %>% 
     dplyr::filter(n>1) %>%
-    mutate(value = value %>% parse_character()) %>% 
+    mutate(value = value %>% as.character %>% parse_character()) %>% 
     .$value
   uniques_matches <- cbind(uniques_matches, unique(out$NAME)) %>% as.vector %>% unique
   out <- out %>% dplyr::filter(MATCHNAME %in% uniques_matches)
