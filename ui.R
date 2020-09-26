@@ -1,4 +1,6 @@
 library(shiny)
+library(htmlwidgets)
+library(DT)
 shinyUI(
   navbarPage(
     "Overlapping Segments Viewer",
@@ -12,12 +14,12 @@ shinyUI(
       helpText("Initial loading may take some time."),
       numericInput("cM", "Minimum cM", value=7),
       selectizeInput("name", "Select matches for comparison",choices = NA, multiple=T),
-      selectizeInput("exclude", "Select matches to exclude from comparison",choices = NA, multiple=T),
-      downloadButton("downloadData_csv", "Download output (.csv)"),
-      downloadButton("downloadData_xlsx", "Download output (.xlsx)")
+      selectizeInput("exclude", "Select matches to exclude from comparison",choices = NA, multiple=T)#,
+      #downloadButton("downloadData_csv", "Download output (.csv)"),
+      #downloadButton("downloadData_xlsx", "Download output (.xlsx)")
     ),
     mainPanel(
-      DT::dataTableOutput("table")
+      DTOutput("table")
     )),
     tabPanel("About",
              mainPanel(helpText("Chromium based (e.g. Chrome or Opera) browsers are recommended, Microsoft Edge won't work.", br(), 
