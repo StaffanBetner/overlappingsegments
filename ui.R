@@ -1,5 +1,5 @@
 if (!("pacman" %in% rownames(installed.packages()))) {install.packages("pacman")}
-pacman::p_load(shiny, htmlwidgets, DT, shinydashboard)
+pacman::p_load(shiny, htmlwidgets, DT, shinydashboard, shinycssloaders)
 
 dashboardPage(
   dashboardHeader(title = "Overlapping Segments Viewer", titleWidth = 310),
@@ -15,4 +15,4 @@ dashboardPage(
                             tags$p("Source code available",tags$a(href = "https://github.com/StaffanBetner/overlappingsegments", "here.")),br(),
                             "Contact: staffan@betner.nu or @StaffanBetner (Twitter)", width = 300),
                    width = 310),
-  dashboardBody(DTOutput("table")))
+  dashboardBody(DTOutput("table") %>% withSpinner()))
