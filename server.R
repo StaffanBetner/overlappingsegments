@@ -45,9 +45,12 @@ findoverlapping_segments <- function(dataset, cM = 7, name = NULL, exclude=NULL)
     olaps[,c(1,10:17)] -> olaps2
     colnames(olaps2) <- colnames(olaps1)
     olaps2 %>% lazy_dt() %>% full_join(olaps1) %>% distinct() %>% 
-      mutate(sorter = !(MATCHNAME %in% name))%>% as.data.table -> olaps
-    setkey(olaps, CHROMOSOME, `START LOCATION`, sorter, `END LOCATION`)
-    olaps %>% select.(-sorter) %>% as.data.table() -> olaps
+      #mutate(sorter = !(MATCHNAME %in% name)) %>% 
+      as.data.table -> olaps
+    setkey(olaps, CHROMOSOME, `START LOCATION`, #sorter, 
+           `END LOCATION`)
+    olaps %>% #select.(-sorter) %>% 
+      as.data.table() -> olaps
   }
 olaps %>% 
   lazy_dt() %>% 
@@ -278,7 +281,8 @@ shinyServer(function(input, output, session) {
                    buttons = list('excel', "csv"),
                    dom = 'lBfrtip',
                    fixedColumns = TRUE), 
-    rownames = FALSE)}}, server = TRUE)})
+    rownames = FALSE, 
+    selection = list(mode="multiple", target = "row", selected = which(segments()$MATCHNAME %in% {input$name %>% as.vector()})))}}, server = TRUE)})
     
 #  observe({
 #  output$downloadData_csv <- downloadHandler(
