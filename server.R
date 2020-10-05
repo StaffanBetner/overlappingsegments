@@ -22,7 +22,7 @@ findoverlapping_segments <- function(dataset, cM = 7, name = NULL, exclude=NULL)
     dataset
   
   setkey(dataset, CHROMOSOME, `START LOCATION`, `END LOCATION`)
-  print("olaps start")
+
   if((is_empty(name)) == T){
     olaps = foverlaps(dataset, dataset, type="any", which=FALSE) %>% 
       lazy_dt() %>% 
@@ -37,14 +37,18 @@ findoverlapping_segments <- function(dataset, cM = 7, name = NULL, exclude=NULL)
       as.data.table()
     
     olaps = foverlaps(dataset_name, dataset, type="any", which=FALSE)
+    olaps %>% 
+      lazy_dt() %>% 
+      filter(MATCHNAME != i.MATCHNAME) %>% 
+      as.data.table() -> olaps
     olaps[,c(1:9)] -> olaps1
     olaps[,c(1,10:17)] -> olaps2
     colnames(olaps2) <- colnames(olaps1)
-    olaps2 %>% lazy_dt() %>% full_join(olaps1) %>% distinct() %>% as.data.table -> olaps
-    setkey(olaps, CHROMOSOME, `START LOCATION`, `END LOCATION`)
+    olaps2 %>% lazy_dt() %>% full_join(olaps1) %>% distinct() %>% 
+      mutate(sorter = !(MATCHNAME %in% name))%>% as.data.table -> olaps
+    setkey(olaps, CHROMOSOME, `START LOCATION`, sorter, `END LOCATION`)
+    olaps %>% select.(-sorter) %>% as.data.table() -> olaps
   }
-  print("olaps finished")
-  print("olaps post start")
 olaps %>% 
   lazy_dt() %>% 
   mutate(CHROMOSOME = CHROMOSOME %>% factor(labels = c(1:22, "X") %>% as.character(), 
@@ -62,7 +66,6 @@ olaps %>%
          `Shared cM`, 
          `Longest Block`) %>% 
   as.data.table() -> output
-print("olaps post finished")
 return(output)
 } 
 
