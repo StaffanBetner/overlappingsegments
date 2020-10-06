@@ -96,7 +96,7 @@ import_custom <- function(x){
   # ? cols = DNAGedcom MyHeritage
   # ? cols = Gedmatch
   
-  imported <- import(x, encoding = "UTF-8", setclass="data.table", blank.lines.skip=TRUE)
+  imported <- import(x, encoding = "UTF-8", setclass="data.table", blank.lines.skip = TRUE)
   
   if(ncol(imported) == 7) {
     imported %>% 
@@ -130,6 +130,7 @@ import_custom <- function(x){
     imported %>% 
       lazy_dt() %>% 
       filter(!is.na(CHROMOSOME)) %>% 
+      mutate(CHROMOSOME = as.character(CHROMOSOME)) %>% 
     as.data.table() -> 
       imported
   }
