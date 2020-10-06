@@ -8,7 +8,7 @@ pacman::p_load(shiny,
                reshape2,
                dtplyr,
                rio,
-               tidytable)
+               tidytable, janitor)
 options(shiny.maxRequestSize=50*1024^2)
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -89,6 +89,53 @@ overlap_in_lists <- function(out){if(length(unique(out$NAME)) > 1){
   out}
   else{out}}
 
+import_custom <- function(x){
+  # 10 cols = MyHeritage
+  # 7 cols = FTDNA
+  # ? cols = DNAGedcom FTDNA
+  # ? cols = DNAGedcom MyHeritage
+  # ? cols = Gedmatch
+  
+  imported <- import(x, encoding = "UTF-8", setclass="data.table", blank.lines.skip=TRUE)
+  
+  if(ncol(imported) == 7) {
+    imported %>% 
+      lazy_dt() %>% 
+      mutate_at(1:3, trimws) %>% 
+      rename(NAME = Name,
+             MATCHNAME = `Match Name`,
+             CHROMOSOME = Chromosome,
+             `START LOCATION` = `Start Location`,
+             `END LOCATION` = `End Location`,
+             CENTIMORGANS = Centimorgans,
+             `MATCHING SNPS` = `Matching SNPs`) %>% 
+      as.data.table() ->
+      imported
+  }
+  if(ncol(imported) == 10){
+    imported %>% 
+      lazy_dt() %>% 
+      mutate_at(1:3, trimws) %>% 
+      select(2, 3, 4, 5, 6, 9, 10) %>% 
+      distinct() %>% 
+      as.data.table() -> 
+      imported
+    colnames(imported) <- c("NAME",
+                            "MATCHNAME",
+                            "CHROMOSOME",
+                            "START LOCATION",
+                            "END LOCATION",
+                            "CENTIMORGANS",
+                            "MATCHING SNPS")
+    imported %>% 
+      lazy_dt() %>% 
+      filter(!is.na(CHROMOSOME)) %>% 
+    as.data.table() -> 
+      imported
+  }
+  return(imported)
+}
+
 shinyServer(function(input, output, session) {
   
   inFile <- reactive({
@@ -112,18 +159,9 @@ shinyServer(function(input, output, session) {
     if (is.null(inFile())) {
       return(NULL)
     } else {
-     rbindlist(lapply(inFile()$datapath, import,
-                             encoding = "UTF-8", quote = "", setclass="data.table")) %>% 
-       lazy_dt() %>% 
-       mutate_at(1:3, trimws) %>% 
-       rename(NAME = Name,
-              MATCHNAME = `Match Name`,
-              CHROMOSOME = Chromosome,
-              `START LOCATION` = `Start Location`,
-              `END LOCATION` = `End Location`,
-              CENTIMORGANS = Centimorgans,
-              `MATCHING SNPS` = `Matching SNPs`) %>% 
-       as.data.table() ->
+
+      
+     rbindlist(lapply(inFile()$datapath, import_custom))  ->
        dat1
      
      data.table(MATCHNAME = unique(dat1$MATCHNAME)) %>% 

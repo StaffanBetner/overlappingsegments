@@ -10,7 +10,7 @@ dashboardPage(
                    numericInput("cM", "Minimum cM", value=7),
                    selectizeInput("name", "Select matches for comparison",choices = NA, multiple=T),
                    selectizeInput("exclude", "Select matches to exclude from comparison",choices = NA, multiple=T),
-                   helpText("Chromium based (e.g. Chrome or Opera) browsers are recommended, (Old) Microsoft Edge probably won't work, upgrade it to the Chromium based version.", br(), 
+                   helpText("FamilyFinder (FamilyTreeDNA) and MyHeritage files supported.",br(),"Chromium based (e.g. Chrome or Opera) browsers are recommended, (Old) Microsoft Edge probably won't work, upgrade it to the Chromium based version.", br(), 
                             "The uploaded files will only be stored temporary and will be deleted after the session is closed.", br(),
                             tags$p("Source code available",tags$a(href = "https://github.com/StaffanBetner/overlappingsegments", "here.")),br(),
                             "Contact: staffan@betner.nu or @StaffanBetner (Twitter)", width = 300),
