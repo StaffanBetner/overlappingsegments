@@ -3,8 +3,8 @@ pacman::p_load(shiny, htmlwidgets, DT, shinydashboard, shinycssloaders)
 
 dashboardPage(
   dashboardHeader(title = "Overlapping Segments Viewer", titleWidth = 310),
-  dashboardSidebar(fileInput('file', 'Upload one or more CSV File(s) with Chromosome Browser Results (Max. Size 50 MB)',
-                             accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv'), multiple = T),
+  dashboardSidebar(fileInput('file', 'Upload one CSV File with Chromosome Browser Results (Max. Size 50 MB)', # or more, (s)
+                             accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv'), multiple = FALSE),
                    #  fileInput('file2', '(Optional) Upload one or more CSV File(s) with Matches List(s) (Max. Size 50 MB)',
                    #            accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv'), multiple = T),
                    numericInput("cM", "Minimum cM", value=7),

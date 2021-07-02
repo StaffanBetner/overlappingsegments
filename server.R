@@ -72,37 +72,38 @@ olaps %>%
 return(output)
 } 
 
-overlap_in_lists <- function(out){if(length(unique(out$NAME)) > 1){
-  out %>% 
-    lazy_dt() %>% 
-    distinct(MATCHNAME, NAME) %>% 
-    group_by(MATCHNAME) %>% 
-    summarise(n = n()) %>% 
-    ungroup() %>% 
-    filter(n > 1) %>% 
-    as.data.table() %>% 
-    pull(MATCHNAME) %>% 
-    c(unique(out$NAME)) -> 
-    uniques_shared_matches
-  
-  out <- out %>% lazy_dt() %>% filter(MATCHNAME %in% uniques_shared_matches) %>% as.data.table()
-  out}
-  else{out}}
+# overlap_in_lists <- function(out){if(length(unique(out$NAME)) > 1){
+#   out %>% 
+#     lazy_dt() %>% 
+#     distinct(MATCHNAME, NAME) %>% 
+#     group_by(MATCHNAME) %>% 
+#     summarise(n = n()) %>% 
+#     ungroup() %>% 
+#     filter(n > 1) %>% 
+#     as.data.table() %>% 
+#     pull(MATCHNAME) %>% 
+#     c(unique(out$NAME)) -> 
+#     uniques_shared_matches
+#   
+#   out <- out %>% lazy_dt() %>% filter(MATCHNAME %in% uniques_shared_matches) %>% as.data.table()
+#   out}
+#   else{out}}
 
 import_custom <- function(x){
   # 10 cols = MyHeritage
-  # 7 cols = FTDNA
+  # 6 cols = FTDNA
   # ? cols = DNAGedcom FTDNA
   # ? cols = DNAGedcom MyHeritage
   # ? cols = Gedmatch
   
   imported <- import(x, encoding = "UTF-8", setclass="data.table", blank.lines.skip = TRUE)
   
-  if(ncol(imported) == 7) {
+  if(ncol(imported) == 6) {
     imported %>% 
       lazy_dt() %>% 
-      mutate_at(1:3, trimws) %>% 
-      rename(NAME = Name,
+      mutate_at(1:2, trimws) %>% 
+      mutate(Name = NA_character_) %>% 
+      transmute(NAME = Name,
              MATCHNAME = `Match Name`,
              CHROMOSOME = Chromosome,
              `START LOCATION` = `Start Location`,
@@ -173,56 +174,58 @@ shinyServer(function(input, output, session) {
        select(-MATCHNAME) %>% 
        rename(MATCHNAME = MATCHNAME2) %>% 
        as.data.table() %>% 
-       nest_by.(NAME) %>% 
+       #nest_by.(NAME) %>% 
+       #lazy_dt() %>% 
+       #mutate(NAME = NAME %>% str_remove("\"")) %>% 
+       #as.data.table() %>% 
+       #unnest.() %>% 
        lazy_dt() %>% 
-       mutate(NAME = NAME %>% str_remove("\"")) %>% 
-       as.data.table() %>% 
-       unnest.() %>% 
-       lazy_dt() %>% 
-       group_by(NAME, MATCHNAME) %>% 
+       group_by(#NAME, 
+                MATCHNAME) %>% 
        mutate(`Shared cM`= sum(CENTIMORGANS*(CHROMOSOME != "X")), 
               `Longest Block` = max(CENTIMORGANS*(CHROMOSOME != "X"))) %>% 
        ungroup() %>% 
        mutate(`Shared cM` = `Shared cM` %>% round(2),
               `Longest Block` = `Longest Block` %>% round(2)) %>% 
        as.data.table() -> out
-     out <- overlap_in_lists(out)
+    # out <- overlap_in_lists(out)
      out}
   })
-  
-  matchesData <- reactive({
-    if (is.null(input$file2)) {
-      return(NULL)
-    } else {rbindlist(lapply(inFile2()$datapath, import,
-                              #`Match Date` = col_date(format = "%m/%d/%Y"), 
-                             encoding = "UTF-8")) %>% #na = c("N/A","")
-      #  group_by(`Full Name`) %>% dplyr::filter(`Match Date` == min(`Match Date`)) %>% ungroup %>%  #Unnecessary
-        mutate(MATCHNAME=`Full Name` %>% 
-                 gsub("  "," ", x = .) %>% gsub("  "," ", x = .) %>% gsub("  "," ", x = .)) %>% 
-        select(MATCHNAME, `Match Date`,`Relationship Range`,`Suggested Relationship`,`Shared cM`,`Longest Block`,`Email`,`Ancestral Surnames`,`Y-DNA Haplogroup`,`mtDNA Haplogroup`) %>% 
-        mutate(`Shared cM`=`Shared cM` %>% signif(digits=2),
-               `Longest Block`=`Longest Block` %>% signif(digits=2))}})
-  
-  names <- reactive({
-    uniques <- data.frame(names=unique(importData()$NAME))
-    if(1<nrow(uniques))
-        {uniques$names}
-        else
-        {NULL}
-      }
-    )
+  ## DEPRECATED
+  # matchesData <- reactive({ 
+  #   if (is.null(input$file2)) {
+  #     return(NULL)
+  #   } else {rbindlist(lapply(inFile2()$datapath, import,
+  #                             #`Match Date` = col_date(format = "%m/%d/%Y"), 
+  #                            encoding = "UTF-8")) %>% #na = c("N/A","")
+  #     #  group_by(`Full Name`) %>% dplyr::filter(`Match Date` == min(`Match Date`)) %>% ungroup %>%  #Unnecessary
+  #       mutate(MATCHNAME=`Full Name` %>% 
+  #                gsub("  "," ", x = .) %>% gsub("  "," ", x = .) %>% gsub("  "," ", x = .)) %>% 
+  #       select(MATCHNAME, `Match Date`,`Relationship Range`,`Suggested Relationship`,`Shared cM`,`Longest Block`,`Email`,`Ancestral Surnames`,`Y-DNA Haplogroup`,`mtDNA Haplogroup`) %>% 
+  #       mutate(`Shared cM`=`Shared cM` %>% signif(digits=2),
+  #              `Longest Block`=`Longest Block` %>% signif(digits=2))}})
+  # 
+  # names <- reactive({
+  #   uniques <- data.frame(names=unique(importData()$NAME))
+  #   if(1<nrow(uniques))
+  #       {uniques$names}
+  #       else
+  #       {NULL}
+  #     }
+  #   )
   
 
   segments <- reactive({
     if (is.null(inFile())) {
       return(NULL)
-    } else {if(is.null(matchesData())){
+    } else {#if(is.null(matchesData())){
       findoverlapping_segments(dataset = importData(),
                                       cM=input$cM, 
                                       name = input$name %>% as.vector(), 
                                       exclude = input$exclude %>% as.vector()) %>% 
         lazy_dt() %>% 
-        transmute(NAME,MATCHNAME,
+        transmute(NAME,
+                  MATCHNAME,
                   CHR=CHROMOSOME, 
                   START = `START LOCATION`, 
                   END = `END LOCATION`, 
@@ -232,35 +235,35 @@ shinyServer(function(input, output, session) {
         out
       
       out <- overlap_in_lists(out)
-      out}
-      else{
-       findoverlapping_segments(dataset = importData(),
-                                        cM = input$cM, 
-                                        name = input$name %>% as.vector(), 
-                                        exclude = input$exclude %>% as.vector()) %>% 
-          lazy_dt() %>% 
-            transmute(NAME,
-                      MATCHNAME,
-                      CHR=CHROMOSOME, 
-                      START = `START LOCATION`, 
-                      END = `END LOCATION`,
-                      CENTIMORGANS, 
-                      `MATCHING SNPS`, 
-                      `Shared cM`, 
-                      `Longest Block`) %>% 
-          left_join(matchesData()) %>% 
-            select(-`Ancestral Surnames`,
-                   -`Y-DNA Haplogroup`,
-                   -`mtDNA Haplogroup`,
-                   -`Shared cM`,
-                   -`Longest Block`,
-                   -`Suggested Relationship`, 
-                   -`Shared cM`, 
-                   -`Longest Block`) %>% 
-          as.data.table() -> 
-          out
-        out <- overlap_in_lists(out)
-        out}
+      out#}
+      # else{
+      #  findoverlapping_segments(dataset = importData(),
+      #                                   cM = input$cM, 
+      #                                   name = input$name %>% as.vector(), 
+      #                                   exclude = input$exclude %>% as.vector()) %>% 
+      #     lazy_dt() %>% 
+      #       transmute(NAME,
+      #                 MATCHNAME,
+      #                 CHR=CHROMOSOME, 
+      #                 START = `START LOCATION`, 
+      #                 END = `END LOCATION`,
+      #                 CENTIMORGANS, 
+      #                 `MATCHING SNPS`, 
+      #                 `Shared cM`, 
+      #                 `Longest Block`) %>% 
+      #     left_join(matchesData()) %>% 
+      #       select(-`Ancestral Surnames`,
+      #              -`Y-DNA Haplogroup`,
+      #              -`mtDNA Haplogroup`,
+      #              -`Shared cM`,
+      #              -`Longest Block`,
+      #              -`Suggested Relationship`, 
+      #              -`Shared cM`, 
+      #              -`Longest Block`) %>% 
+      #     as.data.table() -> 
+      #     out
+      #   out <- overlap_in_lists(out)
+      #   out}
     }
   })
   
@@ -300,7 +303,8 @@ shinyServer(function(input, output, session) {
   observe({updateSelectizeInput(
     session,
     "name",
-    choices=importData()$MATCHNAME, selected = names(), server = TRUE)})
+    choices=importData()$MATCHNAME, #selected = names(), 
+    server = TRUE)})
   
   observe({updateSelectizeInput(
     session,
