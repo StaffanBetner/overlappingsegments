@@ -234,7 +234,7 @@ shinyServer(function(input, output, session) {
         as.data.table() -> 
         out
       
-      out <- overlap_in_lists(out)
+      #out <- overlap_in_lists(out)
       out#}
       # else{
       #  findoverlapping_segments(dataset = importData(),
@@ -295,7 +295,7 @@ shinyServer(function(input, output, session) {
                    -`Longest Block`,
                    -`Suggested Relationship`) %>% 
            as.data.table() -> out
-         out <- overlap_in_lists(out)
+         #out <- overlap_in_lists(out)
          out}
     }
   })
