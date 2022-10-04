@@ -1,5 +1,6 @@
 if (!("pacman" %in% rownames(installed.packages()))) {install.packages("pacman")}
 pacman::p_load(shiny,
+               tidytable,
                tidyverse,
                data.table,
                htmlwidgets,
@@ -8,7 +9,7 @@ pacman::p_load(shiny,
                reshape2,
                dtplyr,
                rio,
-               tidytable, janitor)
+               janitor)
 options(shiny.maxRequestSize=50*1024^2)
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
